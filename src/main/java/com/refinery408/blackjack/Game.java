@@ -1,16 +1,24 @@
 package com.refinery408.blackjack;
 
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class Game {
+    private Logger log = LoggerFactory.getLogger(Game.class);
     private List<Player> players = new ArrayList<>();
     private Dealer dealer;
     private Pack pack;
     private int round = 0;
+    private boolean enableTrainer;
 
-    public Game() {
+    public Game(boolean enableTrainer) {
+        this.enableTrainer = enableTrainer;
         this.pack = new Pack(6);
         this.pack.shuffle();
         this.dealer = new Dealer();
@@ -22,8 +30,8 @@ public class Game {
 
     private void nextRound() {
         this.round++;
-        System.out.println("Round " + this.round);
-        System.out.println("==================================================");
+        log.info("Round " + this.round);
+        log.info("==================================================");
         this.checkShuffle();
         this.resetPlayers();
         this.collectBets();
@@ -40,20 +48,22 @@ public class Game {
                 .filter(Player::isActive)
                 .forEach(p -> {
                     this.takePlayerTurn(p);
-                    System.out.println("--------------------------------------------------");
+                    log.info("--------------------------------------------------");
                 });
         if (this.areAllPlayersInactive()) {
             this.nextRound();
             return;
         }
         this.resolveDoubleDowns();
+        log.info("Dealer's turn");
+        log.info("--------------------------------------------------");
         this.playDealer();
         this.nextRound();
     }
 
     private void checkShuffle() {
         if (this.pack.getPackIndex() >= this.pack.getShuffleIndex()) {
-            System.out.println("Shuffling pack...");
+            log.info("Shuffling pack...");
             this.pack.shuffle();
         }
     }
@@ -69,6 +79,7 @@ public class Game {
     private void collectBets() {
         for (Player p : this.players) {
             p.collectBet();
+            log.info("");
         }
     }
 
@@ -91,7 +102,7 @@ public class Game {
             p.collectInsurance();
         }
         if (this.dealer.getHand().isBlackjack()) {
-            System.out.println("Dealer fucking had it--unbelievable!");
+            log.info("Dealer fucking had it--unbelievable!");
             for (Player p : this.players) {
                 if (p.getInsurance() > 0) {
                     this.payPlayer(p, p.getInsurance() * 2);
@@ -103,7 +114,7 @@ public class Game {
 
     private boolean isDealerBlackjack() {
         if (this.dealer.getHand().isBlackjack()) {
-            System.out.println("Dealer got dat blackjack!");
+            log.info("Dealer got dat blackjack!");
             this.dealer.printDealerFullHand();
             for (Player p : this.players) {
                 Hand h = p.getHand(0);
@@ -120,7 +131,7 @@ public class Game {
         for (Player p : this.players) {
             Hand h = p.getHand(0);
             if (h.isBlackjack()) {
-                System.out.println(p.getName() + " has blackjack baby!");
+                log.info(p.getName() + " has blackjack baby!");
                 this.payPlayer(p, (int) (h.getCurrentBet() * 2.5));
                 h.setActive(false);
             }
@@ -128,7 +139,8 @@ public class Game {
     }
 
     private void takePlayerTurn(Player p) {
-        System.out.println(p.getName() + "'s turn");
+        log.info(p.getName() + "'s turn");
+        log.info("--------------------------------------------------");
         if (p.canDoubleDown()) {
             if (this.doubleDown(p)) {
                 return;
@@ -140,13 +152,14 @@ public class Game {
     private void playHand(Player p, Hand h) {
         h.printHand();
         if (h.isBust()) {
-            System.out.println(String.format("%s busted with %d!", p.getName(), h.lowValue()));
+            log.info(String.format("%s busted with %d!", p.getName(), h.lowValue()));
             h.setActive(false);
             return;
         }
         if (h.is21()) {
             return;
         }
+
         if (h.size() == 1 && h.getCard(0).getRank() == Rank.ACE) {
             this.handleSplitAce(p, h);
             return;
@@ -157,6 +170,11 @@ public class Game {
             }
         }
         boolean hit = p.getDecisionHitOrStand();
+
+        if (this.enableTrainer) {
+            log.info("The correct action is " + Trainer.getBestAction(h, this.dealer.getHand()).name());
+        }
+
         if (hit) {
             h.addCard(this.pack.drawCard());
             this.playHand(p, h);
@@ -167,22 +185,35 @@ public class Game {
         h.addCard(this.pack.drawCard());
         h.printHand();
         if (h.isBlackjack()) {
-            System.out.println("Mini blackjack from split ace!");
+            log.info("Mini blackjack from split ace!");
             this.payPlayer(p, h.getCurrentBet() * 2);
         }
     }
 
     private boolean split(Player p, Hand h) {
-        System.out.println("Would you like to split?");
+        log.info("Would you like to split?");
         boolean yes = p.getDecisionYesOrNo();
+
+        if (this.enableTrainer) {
+            Action bestAction = Trainer.getBestAction(h, this.dealer.getHand());
+            if (bestAction == Action.SPLIT) {
+                log.info("The correct choice is YES\n");
+            } else {
+                log.info("The correct choice is NO\n");
+            }
+        }
+
         if (!yes) {
             return false;
         }
         try {
             p.deductMoney(h.getCurrentBet());
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            log.info(ex.getMessage());
             return false;
+        }
+        if (this.enableTrainer) {
+            log.info("The correct action is " + Trainer.getBestAction(h, this.dealer.getHand()).name());
         }
 
         Hand newHand = new Hand();
@@ -198,18 +229,29 @@ public class Game {
 
     private boolean doubleDown(Player p) {
         p.getHand(0).printHand();
-        System.out.println("Would you like to double down, " + p.getName() + "?");
+        log.info("Would you like to double down, " + p.getName() + "?");
         boolean yes = p.getDecisionYesOrNo();
+
+        if (this.enableTrainer) {
+            Action bestAction = Trainer.getBestAction(p.getHand(0), this.dealer.getHand());
+            if (bestAction == Action.DOUBLE_DOWN) {
+                log.info("The correct choice is YES\n");
+            } else {
+                log.info("The correct choice is NO\n");
+            }
+        }
+
         if (!yes) {
             return false;
         }
+
         try {
             Hand h = p.getHand(0);
             p.deductMoney(h.getCurrentBet());
             h.setCurrentBet(h.getCurrentBet() * 2);
             h.setDoubleDownCard(this.pack.drawCard());
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            log.info(ex.getMessage());
         }
         return true;
     }
@@ -218,7 +260,7 @@ public class Game {
         for (Player p : this.players) {
             Card ddc = p.getHand(0).getDoubleDownCard();
             if (ddc != null) {
-                System.out.println("Resolving double down...");
+                log.info("Resolving double down...");
                 p.getHand(0).addCard(ddc);
                 p.getHand(0).setDoubleDownCard(null);
                 p.printPlayer();
@@ -230,13 +272,13 @@ public class Game {
         this.dealer.printDealerFullHand();
         int high = this.dealer.getHand().highValue();
         if (high < 17) {
-            System.out.println("Dealer hits...");
+            log.info("Dealer hits...");
             this.dealer.getHand().addCard(this.pack.drawCard());
             this.playDealer();
             return;
         }
         if (high > 21) {
-            System.out.println("Dealer busted!");
+            log.info("Dealer busted!");
             this.dealer.printDealerFullHand();
             this.players
                     .stream()
@@ -261,13 +303,13 @@ public class Game {
                      .forEach(h -> {
                          int pHigh = h.highValue();
                          if (pHigh > dealerHigh) {
-                             System.out.println(String.format("%s beat the dealer! (%d vs. %d)\n", p.getName(), pHigh, dealerHigh));
+                             log.info(String.format("%s beat the dealer! (%d vs. %d)\n", p.getName(), pHigh, dealerHigh));
                              this.payPlayer(p, h.getCurrentBet() * 2);
                          } else if (pHigh == dealerHigh) {
-                             System.out.println(String.format("%s tied the dealer. (%d vs. %d)\n", p.getName(), pHigh, dealerHigh));
+                             log.info(String.format("%s tied the dealer. (%d vs. %d)\n", p.getName(), pHigh, dealerHigh));
                              this.payPlayer(p, h.getCurrentBet());
                          } else {
-                             System.out.println(String.format("%s lost to the dealer. (%d vs. %d)\n", p.getName(), pHigh, dealerHigh));
+                             log.info(String.format("%s lost to the dealer. (%d vs. %d)\n", p.getName(), pHigh, dealerHigh));
                          }
                          h.printHand();
                          this.dealer.printDealerFullHand();
@@ -286,7 +328,7 @@ public class Game {
 
     private void payPlayer(Player p, int amount) {
         p.addMoney(amount);
-        System.out.println(String.format("%s made $%d!", p.getName(), amount));
+        log.info(String.format("%s made $%d!\n", p.getName(), amount));
     }
 
     private void printGame() {
@@ -297,11 +339,17 @@ public class Game {
     }
 
     public static void main(String[] args) {
-        Game game = new Game();
-        Player tom = new Player("Player 1", 69);
-        Player sod = new Player("Some other dude", 69);
-        game.addPlayer(tom);
-        game.addPlayer(sod);
+        Config config = ConfigFactory.load("blackjack");
+        
+        int numPlayers = config.getInt("num_players");
+        List<String> names = config.getStringList("player_names");
+        List<Integer> startingMoney = config.getIntList("player_money");
+        boolean enableTrainer = config.getBoolean("enable_trainer");
+
+        Game game = new Game(enableTrainer);
+        for (int i = 0; i < numPlayers; ++i) {
+            game.addPlayer(new Player(names.get(i), startingMoney.get(i)));
+        }
         game.nextRound();
     }
 }

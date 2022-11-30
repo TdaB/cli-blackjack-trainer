@@ -1,11 +1,15 @@
 package com.refinery408.blackjack;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 
 public class Hand {
+    private static final Logger log = LoggerFactory.getLogger(Hand.class);
     protected List<Card> cards = new ArrayList<>();
     protected Card doubleDownCard;
     protected int currentBet;
@@ -99,20 +103,20 @@ public class Hand {
 
     protected void printHand() {
         if (this.getCurrentBet() > 0) {
-            System.out.println("Current bet: " + this.getCurrentBet());
+            log.info("Current bet: " + this.getCurrentBet());
         }
         for (Card c : this.cards) {
-            System.out.println(c);
+            log.info(c.toString());
         }
         int low = this.lowValue();
         int high = this.highValue();
         if (low == high) {
-            System.out.println("Value: " + low);
+            log.info("Value: " + low);
         } else {
-            System.out.println("Low value: " + low);
-            System.out.println("High value: " + high);
+            log.info("Low value: " + low);
+            log.info("High value: " + high);
         }
-        System.out.println();
+        log.info("");
     }
 
     protected Card getRevealedDealerCard() {
@@ -124,14 +128,8 @@ public class Hand {
 
     protected void printDealerRevealedCard() {
         if (this.cards.size() >= 1) {
-            System.out.println(this.cards.get(0));
+            log.info(this.cards.get(0).toString());
         }
-    }
-
-    protected boolean canDoubleDown() {
-        int low = this.lowValue();
-        int high = this.highValue();
-        return low == 9 || low == 10 || low == 11 || high == 9 || high == 10 || high == 11;
     }
 
     protected boolean canSplit() {
@@ -152,5 +150,44 @@ public class Hand {
 
     protected int size() {
         return this.cards.size();
+    }
+
+    protected boolean canDoubleDown() {
+        return this.size() == 2;
+    }
+
+    protected boolean hasAceAndAnother() {
+        if (this.size() != 2) {
+            return false;
+        }
+        for (Card c : this.cards) {
+            if (c.getRank() == Rank.ACE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected Hand newWithoutAce() {
+        Hand h = new Hand();
+        boolean excludedAce = false;
+        for (Card c : this.cards) {
+            if (c.getRank() == Rank.ACE && !excludedAce) {
+                excludedAce = true;
+                continue;
+            }
+            h.addCard(c);
+        }
+        return h;
+    }
+
+    protected boolean hasTwinRanks() {
+        if (this.size() != 2) {
+            return false;
+        }
+        if (this.getCard(0).getRank() == this.getCard(1).getRank()) {
+            return true;
+        }
+        return false;
     }
 }

@@ -1,11 +1,15 @@
 package com.refinery408.blackjack;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
 
 public class Player {
+    private static final Logger log = LoggerFactory.getLogger(Player.class);
     private static final Pattern YES_PATTERN = Pattern.compile("Y|y|((Y|y)(E|e)(S|s))");
     private static final Pattern NO_PATTERN = Pattern.compile("N|n|((N|n)(O|o))");
     private static final Pattern HIT_PATTERN = Pattern.compile("H|h|((H|h)(I|i)(T|t))");
@@ -75,14 +79,14 @@ public class Player {
     }
 
     protected void collectBet() {
-        System.out.println("How much would you like to bet, " + this.name + "?");
-        System.out.println("Bank: " + this.money);
+        log.info("How much would you like to bet, " + this.name + "?");
+        log.info("Bank: " + this.money);
         Scanner in = new Scanner(System.in);
         int amount;
         try {
             amount = in.nextInt();
         } catch (Exception ex) {
-            System.out.println("Failed to read input!");
+            log.info("Failed to read input!");
             this.collectBet();
             return;
         }
@@ -90,13 +94,13 @@ public class Player {
             this.deductMoney(amount);
             this.getHand(0).setCurrentBet(amount);
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            log.info(ex.getMessage());
             this.collectBet();
         }
     }
 
     protected void collectInsurance() {
-        System.out.println("Would you like some scam insurance, " + this.name + "?");
+        log.info("Would you like some scam insurance, " + this.name + "?");
         boolean yes = this.getDecisionYesOrNo();
         if (yes) {
             this.betInsurance();
@@ -104,21 +108,21 @@ public class Player {
     }
 
     protected void betInsurance() {
-        System.out.println("How much insurance?");
-        System.out.println("Bank: " + this.money);
+        log.info("How much insurance?");
+        log.info("Bank: " + this.money);
         int maxInsurance = this.getHand(0).getCurrentBet() / 2;
-        System.out.println("Max insurance: " + maxInsurance);
+        log.info("Max insurance: " + maxInsurance);
         Scanner in = new Scanner(System.in);
         int amount;
         try {
             amount = in.nextInt();
         } catch (Exception ex) {
-            System.out.println("Failed to read input!");
+            log.info("Failed to read input!");
             this.betInsurance();
             return;
         }
         if (amount > maxInsurance) {
-            System.out.println("Cannot bet more than max insurance amount!");
+            log.info("Cannot bet more than max insurance amount!");
             this.collectInsurance();
             return;
         }
@@ -126,26 +130,26 @@ public class Player {
             this.deductMoney(amount);
             this.insurance = amount;
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            log.info(ex.getMessage());
             this.collectInsurance();
         }
     }
 
     protected void printPlayer() {
-        System.out.println(this.name);
+        log.info(this.name);
         for (Hand h : this.hands) {
             h.printHand();
         }
     }
 
     protected boolean getDecisionHitOrStand() {
-        System.out.println("Hit or stand?");
+        log.info("Hit or stand?");
         Scanner in = new Scanner(System.in);
         String decision;
         try {
             decision = in.nextLine();
         } catch (Exception ex) {
-            System.out.println("Failed to read input!");
+            log.info("Failed to read input!");
             return this.getDecisionHitOrStand();
         }
         if (HIT_PATTERN.matcher(decision).matches()) {
@@ -153,7 +157,7 @@ public class Player {
         } else if (STAND_PATTERN.matcher(decision).matches()) {
             return false;
         } else {
-            System.out.println("Wtf did you want?");
+            log.info("Wtf did you want?");
             return this.getDecisionHitOrStand();
         }
     }
@@ -164,7 +168,7 @@ public class Player {
         try {
             decision = in.nextLine();
         } catch (Exception ex) {
-            System.out.println("Failed to read input!");
+            log.info("Failed to read input!");
             return getDecisionYesOrNo();
         }
         if (YES_PATTERN.matcher(decision).matches()) {
@@ -172,13 +176,9 @@ public class Player {
         } else if (NO_PATTERN.matcher(decision).matches()) {
             return false;
         } else {
-            System.out.println("Wtf did you want?");
+            log.info("Wtf did you want?");
             return this.getDecisionYesOrNo();
         }
-    }
-    
-    protected boolean canDoubleDown() {
-        return this.getHand(0).canDoubleDown() && this.getMoney() >= this.getHand(0).getCurrentBet();
     }
 
     protected boolean isActive() {
@@ -188,5 +188,14 @@ public class Player {
             }
         }
         return false;
+    }
+
+    protected boolean canDoubleDown() {
+        Hand latestHand = this.getHand(this.getHands().size() - 1);
+        if (latestHand.currentBet > this.money) {
+            return false;
+        }
+        return latestHand.canDoubleDown();
+        //return this.getHands().size() == 1 && this.getHand(0).size() == 2;
     }
 }
