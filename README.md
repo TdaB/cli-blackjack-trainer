@@ -1,4 +1,6 @@
-# Command-line blackjack
+# Command-line blackjack trainer
+
+Learn blackjack in the most primitive way possible--via the command line!
 
 ![Alt text](screenshots/blackjack.png?raw=true)
 
