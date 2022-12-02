@@ -30,6 +30,7 @@ public class Game {
 
     private void nextRound() {
         this.round++;
+        log.info("==================================================");
         log.info("Round " + this.round);
         log.info("==================================================");
         this.checkShuffle();
@@ -43,6 +44,7 @@ public class Game {
             return;
         }
         this.checkPlayerBlackjack();
+        log.info("--------------------------------------------------");
         this.players
                 .stream()
                 .filter(Player::isActive)
@@ -151,6 +153,8 @@ public class Game {
 
     private void playHand(Player p, Hand h) {
         h.printHand();
+        this.dealer.printDealer();
+
         if (h.isBust()) {
             log.info(String.format("%s busted with %d!", p.getName(), h.lowValue()));
             h.setActive(false);
@@ -164,7 +168,7 @@ public class Game {
             this.handleSplitAce(p, h);
             return;
         }
-        if (h.canSplit() && p.getMoney() >= h.getCurrentBet()) {
+        if (h.canSplit(p.getMoney())) {
             if (this.split(p, h)) {
                 return;
             }
@@ -172,7 +176,7 @@ public class Game {
         boolean hit = p.getDecisionHitOrStand();
 
         if (this.enableTrainer) {
-            log.info("The correct action is " + Trainer.getBestAction(h, this.dealer.getHand()).name());
+            log.info("The correct action is {}\n", Trainer.getBestAction(h, this.dealer.getHand()).name());
         }
 
         if (hit) {
@@ -184,6 +188,8 @@ public class Game {
     private void handleSplitAce(Player p, Hand h) {
         h.addCard(this.pack.drawCard());
         h.printHand();
+        this.dealer.printDealer();
+
         if (h.isBlackjack()) {
             log.info("Mini blackjack from split ace!");
             this.payPlayer(p, h.getCurrentBet() * 2);
@@ -213,7 +219,7 @@ public class Game {
             return false;
         }
         if (this.enableTrainer) {
-            log.info("The correct action is " + Trainer.getBestAction(h, this.dealer.getHand()).name());
+            log.info("The correct action is {}\n", Trainer.getBestAction(h, this.dealer.getHand()).name());
         }
 
         Hand newHand = new Hand();
@@ -229,6 +235,8 @@ public class Game {
 
     private boolean doubleDown(Player p) {
         p.getHand(0).printHand();
+        this.dealer.printDealer();
+
         log.info("Would you like to double down, " + p.getName() + "?");
         boolean yes = p.getDecisionYesOrNo();
 

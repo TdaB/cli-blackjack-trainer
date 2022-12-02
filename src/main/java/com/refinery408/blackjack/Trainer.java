@@ -155,11 +155,7 @@ public class Trainer {
                     case FOUR:
                     case FIVE:
                     case SIX:
-                        if (playerHand.canDoubleDown()) {
-                            return Action.DOUBLE_DOWN;
-                        } else {
-                            return Action.HIT;
-                        }
+                        return Action.DOUBLE_DOWN;
                     default:
                         return Action.HIT;
                 }
@@ -173,11 +169,7 @@ public class Trainer {
                     case SEVEN:
                     case EIGHT:
                     case NINE:
-                        if (playerHand.canDoubleDown()) {
-                            return Action.DOUBLE_DOWN;
-                        } else {
-                            return Action.HIT;
-                        }
+                        return Action.DOUBLE_DOWN;
                     default:
                         return Action.HIT;
                 }
@@ -186,11 +178,7 @@ public class Trainer {
                     case ACE:
                         return Action.HIT;
                     default:
-                        if (playerHand.canDoubleDown()) {
-                            return Action.DOUBLE_DOWN;
-                        } else {
-                            return Action.HIT;
-                        }
+                        return Action.DOUBLE_DOWN;
                 }
             case 12:
                 switch (dealerHand.getCard(0).getRank()) {

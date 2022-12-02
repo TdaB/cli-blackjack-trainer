@@ -192,10 +192,6 @@ public class Player {
 
     protected boolean canDoubleDown() {
         Hand latestHand = this.getHand(this.getHands().size() - 1);
-        if (latestHand.currentBet > this.money) {
-            return false;
-        }
-        return latestHand.canDoubleDown();
-        //return this.getHands().size() == 1 && this.getHand(0).size() == 2;
+        return latestHand.canDoubleDown(this.money);
     }
 }

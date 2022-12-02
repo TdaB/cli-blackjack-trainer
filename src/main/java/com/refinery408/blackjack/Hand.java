@@ -132,8 +132,8 @@ public class Hand {
         }
     }
 
-    protected boolean canSplit() {
-        if (this.cards.size() != 2) {
+    protected boolean canSplit(int playerMoney) {
+        if (this.cards.size() != 2 || playerMoney < this.currentBet) {
             return false;
         }
         return this.cards.get(0).getRank() == this.cards.get(1).getRank();
@@ -152,8 +152,8 @@ public class Hand {
         return this.cards.size();
     }
 
-    protected boolean canDoubleDown() {
-        return this.size() == 2;
+    protected boolean canDoubleDown(int playerMoney) {
+        return playerMoney >= this.currentBet && this.size() == 2;
     }
 
     protected boolean hasAceAndAnother() {
