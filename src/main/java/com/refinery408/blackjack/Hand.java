@@ -101,6 +101,10 @@ public class Hand {
         return this.highValue() == 21 || this.lowValue() == 21;
     }
 
+    protected boolean isSingletonAce() {
+        return this.size() == 1 && this.getCard(0).getRank() == Rank.ACE;
+    }
+
     protected void printHand() {
         if (this.getCurrentBet() > 0) {
             log.info("Current bet: " + this.getCurrentBet());

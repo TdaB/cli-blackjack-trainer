@@ -18,6 +18,6 @@ gradle clean build
 gradle run
 ```
 
-Type into the terminal and hit enter to interact.
+Type into the terminal and hit `Enter` to interact.
 
 Enjoy!

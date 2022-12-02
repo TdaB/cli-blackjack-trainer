@@ -44,19 +44,18 @@ public class Game {
             return;
         }
         this.checkPlayerBlackjack();
-        log.info("--------------------------------------------------");
         this.players
                 .stream()
                 .filter(Player::isActive)
                 .forEach(p -> {
                     this.takePlayerTurn(p);
-                    log.info("--------------------------------------------------");
                 });
         if (this.areAllPlayersInactive()) {
             this.nextRound();
             return;
         }
         this.resolveDoubleDowns();
+        log.info("--------------------------------------------------");
         log.info("Dealer's turn");
         log.info("--------------------------------------------------");
         this.playDealer();
@@ -141,6 +140,7 @@ public class Game {
     }
 
     private void takePlayerTurn(Player p) {
+        log.info("--------------------------------------------------");
         log.info(p.getName() + "'s turn");
         log.info("--------------------------------------------------");
         if (p.canDoubleDown()) {
@@ -156,7 +156,7 @@ public class Game {
         this.dealer.printDealer();
 
         if (h.isBust()) {
-            log.info(String.format("%s busted with %d!", p.getName(), h.lowValue()));
+            log.info("{} busted with {}!\n", p.getName(), h.lowValue());
             h.setActive(false);
             return;
         }
@@ -164,7 +164,7 @@ public class Game {
             return;
         }
 
-        if (h.size() == 1 && h.getCard(0).getRank() == Rank.ACE) {
+        if (h.isSingletonAce()) {
             this.handleSplitAce(p, h);
             return;
         }
@@ -217,9 +217,6 @@ public class Game {
         } catch (Exception ex) {
             log.info(ex.getMessage());
             return false;
-        }
-        if (this.enableTrainer) {
-            log.info("The correct action is {}\n", Trainer.getBestAction(h, this.dealer.getHand()).name());
         }
 
         Hand newHand = new Hand();
